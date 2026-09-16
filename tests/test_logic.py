@@ -161,6 +161,14 @@ class TestPushBox(unittest.TestCase):
         st = state_of(["###", "#P#", "###"])
         self.assertIs(logic.move(st, "right"), st)
 
+    def test_moves_count_once_per_action_with_transfer(self):
+        """回归：搬运/穿口路径曾经把一次按键记成两步。"""
+        st = state_of(["#####", "#P..#", "#####"],
+                      [{"uid": "bX", "at": [2, 1]},
+                       {"uid": "sink", "at": [3, 1], "inner_world": room("left")}])
+        new = logic.move(st, "right")            # 箱子被推进 sink 的口
+        self.assertEqual(new["moves"], 1)
+
     def test_move_does_not_mutate_input(self):
         st = state_of(["#####", "#P..#", "#####"], [{"uid": "b1", "at": [2, 1]}])
         before = copy.deepcopy(st)
@@ -396,17 +404,18 @@ class TestWinAndLevel(unittest.TestCase):
         self.assertTrue(logic.check_win(st))
 
     def test_level_02_solution_wins(self):
-        """吞食01：BFS 最短 21 步；核心手法是从 A 的右边口进、底边口出（把箱子当隧道）。"""
+        """吞食01：BFS 最短 37 步；解法会先把箱子吞进 A，再从内部把它推出来。"""
         state = W.load_level(LEVELS_DIR / "level_02.json")["state"]
-        paths = []
-        for d in ["right", "right", "down", "left", "up", "left", "left", "left", "down",
-                  "left", "down", "down", "down", "right", "up", "up", "up",
-                  "down", "down", "down", "left"]:
+        swallowed = False
+        for d in ["up", "left", "down", "right", "right", "right", "down", "left", "left",
+                  "down", "left", "up", "right", "up", "left", "left", "up", "left", "left",
+                  "down", "right", "right", "right", "right", "down", "right", "right", "up",
+                  "left", "down", "left", "up", "up", "down", "down", "down", "left"]:
             state = logic.move(state, d)
-            paths.append(list(state["player"]["path"]))
+            swallowed = swallowed or bool(W.find_world(state["root"], ["A"])["boxes"])
         self.assertTrue(logic.check_win(state))
-        self.assertEqual(state["moves"], 21)
-        self.assertIn(["A"], paths)                     # 中途确实进过 A 的内部（隧道）
+        self.assertEqual(state["moves"], 37)
+        self.assertTrue(swallowed, "解法里应当把箱子吞进 A 一次")
         self.assertEqual((state["root"]["boxes"]["1"]["x"], state["root"]["boxes"]["1"]["y"]), (3, 1))
         self.assertEqual((state["root"]["boxes"]["A"]["x"], state["root"]["boxes"]["A"]["y"]), (2, 3))
         self.assertEqual((state["player"]["x"], state["player"]["y"]), (2, 5))
