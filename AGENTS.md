@@ -42,7 +42,8 @@ parabox/
 │   ├── render.py               # Pygame 绘制（多层世界 + 箱内缩略图 + HUD）
 │   └── ui.py                   # 选关界面
 ├── levels/
-│   └── level_01.json           # 关卡数据（地图 + 嵌套结构）
+│   ├── level_01.json           # 关卡「测试」：外层 7×6 + 内层 5×5，5 步通关
+│   └── level_02.json           # 关卡「吞食01」：外层 7×7 + 内层 5×5，37 步通关（吞食）
 ├── tests/
 │   ├── test_logic.py           # 推箱 / 链推动 / 吸入 / 进出 / 胜利
 │   ├── test_world.py           # 数据结构 / 关卡解析校验 / 目标点统计
