@@ -45,7 +45,7 @@ class TestPalette(unittest.TestCase):
         for name in ("wall", "box_open", "box_plain"):
             for floor in ("floor", "inner"):
                 self.assertGreaterEqual(ratios[f"{name}/{floor}"], 3.0, ratios)
-        for name in ("player", "goal", "glow", "door"):
+        for name in ("player", "goal", "glow"):
             for floor in ("floor", "inner"):
                 self.assertGreaterEqual(ratios[f"{name}/{floor}"], 4.5, ratios)
         for name in ("text/bg", "muted/bg"):

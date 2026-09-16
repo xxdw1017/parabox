@@ -7,6 +7,11 @@
 美术风格：纯色平涂（不用贴图、不用渐变）。色相约定：
 墙=淡灰、外层空地=深灰、内部空间=深黄、玩家=洋红、含内部空间的方块=黄、普通方块=蓝；
 方块或玩家站在判定点上时，边框/外圈发亮。
+
+判定点形状与大小（2026-09-17 定稿）：
+- `g`（箱子判定点）= **方框**，大小与方块一致（方块压上去时正好重合）；
+- `G`（玩家判定点）= **圆环**，大小与玩家一致（玩家站上去时正好同圈）；
+- 不再额外画"入口小横线"：口本身在内层地图上是墙上的缺口，看得见。
 """
 
 from __future__ import annotations
@@ -14,12 +19,13 @@ from __future__ import annotations
 import pygame
 
 from src import world as W
-from src.entity import DELTA, GOAL, PLAYER_GOAL, door_sides, side_center
+from src.entity import GOAL, PLAYER_GOAL
 
 TILE = 64                      # 格子边长上限
 MIN_THUMB_TILE = 4             # 缩略图格子边长下限：低于此值只画色块
 THUMB_MARGIN = 0.12            # 缩略图相对格子的内缩比例
 HUD_H = 64                     # 底部 HUD 高度
+PLAYER_RATIO = 0.32            # 玩家圆半径 / 格子边长
 
 PALETTE = {
     "bg": "#14161A",           # 世界之外的底色
@@ -29,10 +35,9 @@ PALETTE = {
     "player": "#FF8AD0",       # 玩家：洋红（偏亮以保证对比度）
     "box_open": "#F2C744",     # 含内部空间的方块：黄
     "box_plain": "#6FA8FF",    # 普通方块：蓝
-    "goal": "#6CC77A",         # 判定点标记（g 画圆环，G 画方框）
+    "goal": "#6CC77A",         # 判定点标记（g 画方框、G 画圆环）
     "glow": "#FFFFFF",         # 判定点达成时的亮边
     "edge": "#14161A",         # 方块默认描边（纯色块靠它压住边界）
-    "door": "#EBEEF5",         # 口标记
     "text": "#EBEEF5",         # HUD 正文
     "muted": "#98A2B8",        # HUD 次要文字
     "active": "#F5A623",       # 活动层高亮
@@ -71,12 +76,11 @@ def palette_contrasts() -> dict:
     """各可读性指标的实测值，供测试断言与调色参考（两种地面都要查）。"""
     floors = {"floor": rgb(PALETTE["floor"]), "inner": rgb(PALETTE["floor_inner"])}
     out = {}
-    for name in ("wall", "player", "box_open", "box_plain", "goal", "glow", "door"):
+    for name in ("wall", "player", "box_open", "box_plain", "goal", "glow"):
         for label, floor in floors.items():
             out[f"{name}/{label}"] = contrast_ratio(rgb(PALETTE[name]), floor)
     out["text/bg"] = contrast_ratio(rgb(PALETTE["text"]), rgb(PALETTE["bg"]))
     out["muted/bg"] = contrast_ratio(rgb(PALETTE["muted"]), rgb(PALETTE["bg"]))
-    out["edge/wall"] = contrast_ratio(rgb(PALETTE["edge"]), rgb(PALETTE["wall"]))
     return out
 
 
@@ -104,6 +108,16 @@ def world_tile_size(world: dict, area_w: int, area_h: int) -> int:
     return max(MIN_THUMB_TILE, min(TILE, area_w // world["w"], area_h // world["h"]))
 
 
+def box_rect(px: int, py: int, tile: int) -> pygame.Rect:
+    """方块的矩形（判定点方框也用同一个，保证大小与方块一致）。"""
+    return pygame.Rect(px + 2, py + 2, max(2, tile - 4), max(2, tile - 4))
+
+
+def player_radius(tile: int) -> int:
+    """玩家圆的半径（判定点圆环也用同一个，保证大小与玩家一致）。"""
+    return max(3, int(tile * PLAYER_RATIO))
+
+
 def thumbnail_rect(px: int, py: int, tile: int, inner: dict):
     """箱内缩略图在格子 (px, py, tile) 里的居中矩形。
 
@@ -121,29 +135,13 @@ def thumbnail_rect(px: int, py: int, tile: int, inner: dict):
     return (px + (tile - w) // 2, py + (tile - h) // 2, w, h, inner_tile)
 
 
-def _door_marks(surface, inner: dict, rect: pygame.Rect, tile: int) -> None:
-    """把箱子的口画在该边中心位置（门色缺口线）。"""
-    seg = max(3, tile // 5)
-    width = max(3, tile // 10)
-    for side in door_sides(inner):
-        dx, dy = DELTA[side]
-        if dx:
-            x = rect.right if dx > 0 else rect.left
-            pygame.draw.line(surface, rgb(PALETTE["door"]),
-                             (x, rect.centery - seg // 2), (x, rect.centery + seg // 2), width)
-        else:
-            y = rect.bottom if dy > 0 else rect.top
-            pygame.draw.line(surface, rgb(PALETTE["door"]),
-                             (rect.centerx - seg // 2, y), (rect.centerx + seg // 2, y), width)
-
-
 def draw_box(surface, box: dict, px: int, py: int, tile: int, on_goal: bool = False) -> None:
-    """画一个方块：纯色平涂 + 描边 + 口 + 内层缩略图。
+    """画一个方块：纯色平涂 + 描边 + 内层缩略图（不画入口横线）。
 
     - 含内部空间 = 黄，普通 = 蓝；
-    - 默认描边用深色（`edge`）；**站在判定点上时描边换成亮色（`glow`）并加粗**。
+    - 默认描边近黑；**站在判定点上时描边换成亮色并加粗、再套一圈亮线**。
     """
-    rect = pygame.Rect(px + 2, py + 2, max(2, tile - 4), max(2, tile - 4))
+    rect = box_rect(px, py, tile)
     radius = max(2, tile // 8)
     inner = box["inner_world"]
     fill = PALETTE["box_open"] if inner is not None else PALETTE["box_plain"]
@@ -160,7 +158,6 @@ def draw_box(surface, box: dict, px: int, py: int, tile: int, on_goal: bool = Fa
                          max(2, tile // 16), border_radius=radius)
 
     if inner is not None:
-        _door_marks(surface, inner, rect, tile)
         x0, y0, w, h, inner_tile = thumbnail_rect(px, py, tile, inner)
         if inner_tile >= MIN_THUMB_TILE:
             draw_world(surface, inner, (x0, y0), int(inner_tile), player=None, active=False, inner=True)
@@ -169,8 +166,8 @@ def draw_box(surface, box: dict, px: int, py: int, tile: int, on_goal: bool = Fa
 
 
 def draw_world(surface, world: dict, origin, tile: int, player=None,
-               active: bool = False, mark_doors: bool = False, inner: bool = False) -> None:
-    """画一个世界：地形 → 判定点 → 口 → 方块（含缩略图）→ 玩家 → 活动层高亮。
+               active: bool = False, inner: bool = False) -> None:
+    """画一个世界：地形 → 判定点 → 方块（含缩略图）→ 玩家 → 活动层高亮。
 
     `inner=True` 表示这是箱子的内部空间：空地画成深黄（外层是深灰）。
     """
@@ -184,19 +181,13 @@ def draw_world(surface, world: dict, origin, tile: int, player=None,
             pygame.draw.rect(surface, rgb(PALETTE["wall"] if ch == "#" else floor), cell)
             if tile >= 16:
                 pygame.draw.rect(surface, rgb(PALETTE["bg"]), cell, line)
-            if ch == GOAL:                                     # 箱子判定点：圆环
+            if ch == GOAL:                                     # 箱子判定点：方框（与方块同大）
+                goal_box = box_rect(cell.x, cell.y, tile)
+                pygame.draw.rect(surface, rgb(PALETTE["goal"]), goal_box,
+                                 max(2, tile // 16), border_radius=max(2, tile // 8))
+            elif ch == PLAYER_GOAL:                            # 玩家判定点：圆环（与玩家同大）
                 pygame.draw.circle(surface, rgb(PALETTE["goal"]), cell.center,
-                                   max(3, tile // 5), max(2, tile // 16))
-            elif ch == PLAYER_GOAL:                            # 玩家判定点：方框
-                inset = max(6, tile // 3)
-                pygame.draw.rect(surface, rgb(PALETTE["goal"]), cell.inflate(-inset, -inset),
-                                 max(2, tile // 16))
-
-    if mark_doors:                                            # 站在内层时标出可以走出去的口
-        for side in door_sides(world):
-            cell = side_center(world, side)
-            mark = pygame.Rect(ox + cell[0] * tile, oy + cell[1] * tile, tile, tile)
-            pygame.draw.rect(surface, rgb(PALETTE["door"]), mark, max(3, tile // 10))
+                                   player_radius(tile), max(2, tile // 16))
 
     for uid in sorted(world["boxes"]):
         box = world["boxes"][uid]
@@ -205,7 +196,7 @@ def draw_world(surface, world: dict, origin, tile: int, player=None,
 
     if player is not None:
         center = (ox + player[0] * tile + tile // 2, oy + player[1] * tile + tile // 2)
-        radius = max(3, int(tile * 0.32))
+        radius = player_radius(tile)
         if world["tiles"][player[1]][player[0]] == PLAYER_GOAL:   # 玩家站上判定点 → 外圈发亮
             pygame.draw.circle(surface, rgb(PALETTE["glow"]), center,
                                radius + max(2, tile // 16), max(2, tile // 12))
@@ -259,8 +250,7 @@ def draw_scene(surface, state: dict, fonts: dict, title: str = "", won: bool = F
     ox = (width - world["w"] * tile) // 2
     oy = (height - HUD_H - world["h"] * tile) // 2
     player = (state["player"]["x"], state["player"]["y"])
-    draw_world(surface, world, (ox, oy), tile, player=player, active=True,
-               mark_doors=bool(path), inner=bool(path))
+    draw_world(surface, world, (ox, oy), tile, player=player, active=True, inner=bool(path))
     draw_hud(surface, state, fonts, title)
     if won:
         draw_win(surface, state, fonts)
