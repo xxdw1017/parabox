@@ -6,7 +6,7 @@
 
     世界 = {
         "w": int, "h": int,
-        "tiles": [[str]],            # "#" 墙 / "." 空地 / "g" 目标点
+        "tiles": [[str]],            # "#" 墙 / "." 空地 / "g" 箱子目标点 / "G" 玩家站位点
         "boxes": {uid: 箱子},
         "start": [x, y] | None,      # 解析前是 "P" 的位置，即玩家起点
     }
@@ -30,9 +30,10 @@ _OPPOSITE = {"up": "down", "down": "up", "left": "right", "right": "left"}
 
 WALL = "#"
 FLOOR = "."
-GOAL = "g"
+GOAL = "g"                  # 箱子要盖住的目标点
+PLAYER_GOAL = "G"           # 玩家最终要站在的目标点（整关最多一个）
 PLAYER_START = "P"
-TILE_CHARS = (WALL, FLOOR, GOAL, PLAYER_START)
+TILE_CHARS = (WALL, FLOOR, GOAL, PLAYER_GOAL, PLAYER_START)
 
 
 def opposite(direction: str) -> str:
@@ -74,8 +75,13 @@ def is_wall(world: dict, x: int, y: int) -> bool:
 
 
 def is_goal(world: dict, x: int, y: int) -> bool:
-    """该格是不是目标点。"""
+    """该格是不是箱子目标点（小写 g）。"""
     return tile_at(world, x, y) == GOAL
+
+
+def is_player_goal(world: dict, x: int, y: int) -> bool:
+    """该格是不是玩家站位目标点（大写 G）。"""
+    return tile_at(world, x, y) == PLAYER_GOAL
 
 
 def box_at(world: dict, x: int, y: int):

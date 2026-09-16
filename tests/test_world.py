@@ -7,10 +7,10 @@ import unittest
 from pathlib import Path
 
 from src import world as W
-from src.entity import (DIRS, box_at, boxes_of, can_advance, chain_from, door_sides,
-                        entry_door, exit_side_at, has_door, has_inner_world, in_bounds,
-                        is_goal, is_openable, is_wall, make_box, make_player, opposite,
-                        side_center, step, tile_at)
+from src.entity import (DIRS, PLAYER_GOAL, box_at, boxes_of, can_advance, chain_from,
+                        door_sides, entry_door, exit_side_at, has_door, has_inner_world,
+                        in_bounds, is_goal, is_openable, is_player_goal, is_wall,
+                        make_box, make_player, opposite, side_center, step, tile_at)
 
 LEVEL_01 = Path(__file__).resolve().parent.parent / "levels" / "level_01.json"
 
@@ -133,6 +133,46 @@ class TestDoors(unittest.TestCase):
         self.assertFalse(is_openable({"uid": "b", "x": 0, "y": 0, "inner_world": room(door=None)}))
         self.assertFalse(is_openable(make_box("plain", 0, 0)))
         self.assertTrue(has_inner_world({"uid": "b", "x": 0, "y": 0, "inner_world": room(door=None)}))
+
+
+class TestPlayerGoal(unittest.TestCase):
+    """玩家站位目标点 G：整关最多一个；有它时胜负判定多一个条件。"""
+
+    def test_parse_and_lookup(self):
+        w = tiny_world(["#####", "#.G.#", "#####"])
+        self.assertTrue(is_player_goal(w, 2, 1))
+        self.assertFalse(is_player_goal(w, 1, 1))
+        self.assertFalse(is_goal(w, 2, 1))
+        self.assertEqual(W.count_player_goals(w), 1)
+        self.assertEqual(W.player_goal(w), ([], (2, 1)))
+
+    def test_player_goal_satisfied(self):
+        st = W.new_state(tiny_world(["#####", "#.G.#", "#...#", "#####"]), start=[1, 1])
+        self.assertFalse(W.player_goal_satisfied(st))
+        st["player"] = make_player([], 2, 1)
+        self.assertTrue(W.player_goal_satisfied(st))
+
+    def test_player_goal_absent_means_satisfied(self):
+        st = W.new_state(tiny_world(["#####", "#...#", "#...#", "#####"]), start=[1, 1])
+        self.assertIsNone(W.player_goal(st["root"]))
+        self.assertTrue(W.player_goal_satisfied(st))
+
+    def test_player_goal_can_live_in_inner_world(self):
+        root = W.parse_world({"w": 5, "h": 4, "tiles": ["#####", "#.g.#", "#...#", "#####"],
+                              "boxes": [{"uid": "b1", "at": [1, 1], "inner_world": room("down")}]})
+        root["boxes"]["b1"]["inner_world"]["tiles"][2] = "#.G.#"
+        self.assertEqual(W.count_player_goals(root), 1)
+        self.assertEqual(W.player_goal(root), (["b1"], (2, 2)))
+        st = W.new_state(root)
+        self.assertFalse(W.player_goal_satisfied(st))          # 玩家还在外层
+        st["player"] = make_player(["b1"], 2, 2)
+        self.assertTrue(W.player_goal_satisfied(st))
+
+    def test_parse_level_rejects_two_player_goals(self):
+        with self.assertRaises(W.LevelError):
+            W.parse_level({"world": {"w": 5, "h": 4,
+                                     "tiles": ["#####", "#gG.#", "#G.P#", "#####"],
+                                     "boxes": []}})
 
 
 class TestParseLevel01(unittest.TestCase):

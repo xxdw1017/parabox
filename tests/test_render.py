@@ -113,6 +113,16 @@ class TestDraw(unittest.TestCase):
             state = logic.move(state, "up")
             render.draw_scene(self.surface, state, self.fonts, "t")     # 含箱内缩略图那一帧
 
+    def test_draw_player_goal_marker(self):
+        """玩家站位点（方框，站上后填实）能正常画出来，且不改状态。"""
+        root = W.parse_world({"w": 5, "h": 4, "tiles": ["#####", "#gG.#", "#...#", "#####"],
+                              "boxes": [{"uid": "b1", "at": [1, 1]}]})
+        state = W.new_state(root, start=[2, 2])
+        before = copy.deepcopy(state)
+        render.draw_scene(self.surface, state, self.fonts, "G 测试")
+        self.assertEqual(state, before)
+        render.draw_scene(self.surface, W.new_state(root, start=[2, 1]), self.fonts, "G 测试")
+
     def test_draw_win_overlay(self):
         state = W.load_level(LEVELS / "level_01.json")["state"]
         render.draw_win(self.surface, state, self.fonts)

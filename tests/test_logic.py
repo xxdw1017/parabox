@@ -386,6 +386,14 @@ class TestWinAndLevel(unittest.TestCase):
         self.assertEqual(state["moves"], 5)
         self.assertEqual(state["player"]["path"], ["b1"])
 
+    def test_check_win_requires_player_on_goal(self):
+        """有 G 时：箱子都到位还不够，玩家必须站上去。"""
+        st = state_of(["#####", "#gG.#", "#...#", "#####"],
+                      [{"uid": "b1", "at": [1, 1]}], player=[2, 2])
+        self.assertFalse(logic.check_win(st))            # 箱子已在 g 上，但玩家没站在 G
+        st = logic.move(st, "up")                        # (2,2) → (2,1) = G
+        self.assertTrue(logic.check_win(st))
+
     def test_check_win_false_initially(self):
         self.assertFalse(logic.check_win(W.load_level(LEVEL_01)["state"]))
 

@@ -10,7 +10,7 @@ from __future__ import annotations
 import pygame
 
 from src import world as W
-from src.entity import DELTA, door_sides, side_center
+from src.entity import DELTA, PLAYER_GOAL, door_sides, side_center
 
 TILE = 64                      # 格子边长上限
 MIN_THUMB_TILE = 4             # 缩略图格子边长下限：低于此值只画色块
@@ -160,6 +160,10 @@ def draw_world(surface, world: dict, origin, tile: int, player=None,
             if world["tiles"][y][x] == "g":
                 pygame.draw.circle(surface, rgb(PALETTE["goal"]), cell.center,
                                    max(3, tile // 5), max(2, tile // 16))
+            elif world["tiles"][y][x] == PLAYER_GOAL:          # 玩家站位点：方框，与箱子目标点区分
+                inset = max(6, tile // 3)
+                pygame.draw.rect(surface, rgb(PALETTE["door"]), cell.inflate(-inset, -inset),
+                                 max(2, tile // 16))
 
     if mark_doors:                                            # 站在内层时标出可以走出去的口
         for side in door_sides(world):
@@ -172,6 +176,10 @@ def draw_world(surface, world: dict, origin, tile: int, player=None,
         draw_box(surface, box, ox + box["x"] * tile, oy + box["y"] * tile, tile)
 
     if player is not None:
+        if world["tiles"][player[1]][player[0]] == PLAYER_GOAL:      # 站上了就填实，表示已达成
+            inset = max(6, tile // 3)
+            stand = pygame.Rect(ox + player[0] * tile, oy + player[1] * tile, tile, tile)
+            pygame.draw.rect(surface, rgb(PALETTE["door"]), stand.inflate(-inset, -inset))
         center = (ox + player[0] * tile + tile // 2, oy + player[1] * tile + tile // 2)
         pygame.draw.circle(surface, rgb(PALETTE["player"]), center, max(3, int(tile * 0.32)))
 

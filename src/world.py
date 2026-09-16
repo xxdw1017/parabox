@@ -18,8 +18,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from src.entity import (DIRS, FLOOR, GOAL, PLAYER_START, TILE_CHARS, WALL,
-                        box_at, has_inner_world, side_center)
+from src.entity import (DIRS, FLOOR, GOAL, PLAYER_GOAL, PLAYER_START, TILE_CHARS,
+                        WALL, box_at, has_inner_world, side_center)
 
 
 class LevelError(ValueError):
@@ -116,6 +116,8 @@ def parse_level(data: dict) -> dict:
     root = parse_world(data["world"], "world")
     if count_goals(root) == 0:
         raise LevelError("关卡至少需要一个目标点 g")
+    if count_player_goals(root) > 1:
+        raise LevelError("整关最多一个玩家站位目标点 G")
     return {
         "name": data.get("name", "level"),
         "title": data.get("title", ""),
@@ -209,8 +211,37 @@ def covered_goals(world: dict) -> int:
 
 
 def all_goals_covered(world: dict) -> bool:
-    """所有层的目标点是否都被箱子盖住。"""
+    """所有层的箱子目标点是否都被箱子盖住。"""
     return count_goals(world) > 0 and count_goals(world) == covered_goals(world)
+
+
+def count_player_goals(world: dict) -> int:
+    """统计玩家站位目标点 G 的数量（整关最多一个）。"""
+    total = 0
+    for _, w in iter_worlds(world):
+        for row in w["tiles"]:
+            total += sum(1 for ch in row if ch == PLAYER_GOAL)
+    return total
+
+
+def player_goal(world: dict):
+    """找到玩家站位目标点，返回 (path, (x, y))；没有则 None。"""
+    for path, w in iter_worlds(world):
+        for y, row in enumerate(w["tiles"]):
+            for x, ch in enumerate(row):
+                if ch == PLAYER_GOAL:
+                    return path, (x, y)
+    return None
+
+
+def player_goal_satisfied(state: dict) -> bool:
+    """玩家是否站在玩家目标点上；关卡里没有 G 时视为满足（只看箱子目标点）。"""
+    found = player_goal(state["root"])
+    if found is None:
+        return True
+    path, cell = found
+    player = state["player"]
+    return list(path) == list(player["path"]) and (player["x"], player["y"]) == cell
 
 
 def first_free_cell(world: dict):

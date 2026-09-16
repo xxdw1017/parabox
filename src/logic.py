@@ -23,8 +23,12 @@ from src.entity import (DELTA, box_at, can_advance, chain_from, entry_door,
 
 
 def check_win(state: dict) -> bool:
-    """胜利判定：所有层的目标点都被箱子盖住（AGENTS.md「胜利判定」）。"""
-    return W.all_goals_covered(state["root"])
+    """胜利判定（AGENTS.md「胜利判定」）：
+
+    所有层的箱子目标点都被箱子盖住，**且**玩家站在玩家站位目标点上；
+    关卡里没有 `G` 时只看箱子目标点。
+    """
+    return W.all_goals_covered(state["root"]) and W.player_goal_satisfied(state)
 
 
 def collect_chain(state: dict, direction: str) -> dict:
