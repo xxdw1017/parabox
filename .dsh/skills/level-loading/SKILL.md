@@ -13,7 +13,7 @@ description: 当需要新增或修改关卡 JSON、调整关卡字段、做加�
 ```json
 {
   "name": "level_01",
-  "title": "递归之箱 · 第一关",
+  "title": "测试",
   "hint": "一句话提示",
   "world": {
     "w": 7, "h": 6,
