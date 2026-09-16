@@ -89,15 +89,23 @@ def load_fonts(sizes=(16, 18, 22, 28)) -> dict:
     """加载中文字体（找不到就退回 pygame 默认字体）。"""
     pygame.font.init()
     path = None
-    for name in ("PingFang SC", "Hiragino Sans GB", "Heiti SC", "Microsoft YaHei", "SimHei"):
+    for name in ("PingFang SC", "Hiragino Sans GB", "Heiti SC", "Microsoft YaHei",
+                 "Microsoft YaHei UI", "SimHei", "Noto Sans CJK SC", "WenQuanYi Micro Hei"):
         found = pygame.font.match_font(name)
         if found:
             path = found
             break
     if path is None:
         import os
+        # 系统字体匹配失败时直接找字体文件：macOS / Windows / Linux 各留一条路，
+        # 保证打包成 exe 拿到别人电脑上也不会画成方块。
         for candidate in ("/System/Library/Fonts/PingFang.ttc",
-                          "/System/Library/Fonts/Supplemental/Songti.ttc"):
+                          "/System/Library/Fonts/Supplemental/Songti.ttc",
+                          "C:/Windows/Fonts/msyh.ttc",
+                          "C:/Windows/Fonts/msyh.ttf",
+                          "C:/Windows/Fonts/simhei.ttf",
+                          "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+                          "/usr/share/fonts/truetype/wqy/wqy-microhei.ttc"):
             if os.path.exists(candidate):
                 path = candidate
                 break
