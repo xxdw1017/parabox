@@ -105,15 +105,27 @@ parabox/
 ## 测试
 
 ```
-108 个用例，覆盖：
+121 个用例，覆盖：
 - 规则逻辑（41）  ：推箱、链推动、吸入、进出内层、双向穿口、自引用、胜利判定、两关的通关解法
 - 数据结构（44）  ：关卡解析与非法数据、口规则、嵌套校验、目标点统计
 - 渲染交互（23）  ：色板与文档一致性、对比度、缩略图几何、绘制只读状态、选关与主循环
+- 打包与自检（13）：源码/打包两种运行位置下的关卡目录解析、自检报告与失败路径
 ```
 
 ```bash
 .venv/bin/python -m unittest discover tests -v
 ```
+
+## 打包成 exe（投屏 / 拷到别的电脑）
+
+在自己的 Windows 电脑上：双击 **`build_windows.bat`**，产物是 `dist\RecursiveBox.exe`，
+双击即玩，不需要装 Python。投屏前先自检一次：
+
+```bash
+RecursiveBox.exe --selftest    # 退出码 0 = 通过，同目录生成 selftest_report.txt
+```
+
+完整步骤（含云端构建备份方案、SmartScreen 提示、分辨率注意事项）见 **`PACKAGING.md`**。
 
 ## 已知限制
 

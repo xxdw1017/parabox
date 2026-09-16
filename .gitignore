@@ -9,3 +9,15 @@ __pycache__/
 .DS_Store
 .~*
 ~$*
+
+# 打包产物（parabox.spec 与 tools/build_app.py 是源码，保留；build/dist 是产物）
+build/
+dist/
+*.manifest
+.venv-build/
+
+# 自检报告（src/selftest.py 输出在程序旁边）
+selftest_report.txt
+
+# PyInstaller 缓存（放在项目内，见 tools/build_app.py）
+.pyinstaller-cache/
