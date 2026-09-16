@@ -35,10 +35,7 @@
 ## 五、交付检查
 提交前必须确认：
 - `python main.py` 能启动并进入选关界面。
-- `.venv/bin/python main.py --selftest` 退出码为 0（关卡找得到、渲染不崩）。
 - 至少一个关卡可完整通关。
 - 所有测试通过。
 - 演示视频已录制。
-- 要投屏的电脑上用打包产物时：`RecursiveBox.exe --selftest` 退出码为 0，
-  且同目录 `selftest_report.txt` 里的关卡数不为 0（打包漏关卡是最容易翻车的点，见 `PACKAGING.md`）。
 - 三个规则文件（AGENTS.md、各 SKILL.md、RULE.md）与当前实现一致。

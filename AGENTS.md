@@ -24,9 +24,6 @@ Python + Pygame 复刻《Patrick's Parabox》单关卡。
 - 只跑逻辑测试：`python -m unittest tests.test_logic -v`
 - 用系统 Python 跑测试时，渲染 / 选关 / 主循环用例会自动跳过（未装 pygame），逻辑用例照常执行。
 - IDE（VS Code）：解释器切到 `./.venv/bin/python`。
-- 不开窗口自检（打包后在目标电脑上确认关卡带上了）：`.venv/bin/python main.py --selftest`
-- 打包（Windows 上直接双击 `build_windows.bat`）：`.venv/bin/python tools/build_app.py`，
-  产物 `dist/RecursiveBox.exe`（macOS 为 `dist/RecursiveBox`）；打包与投屏详见 `PACKAGING.md`。
 
 ## 目录结构
 ```
@@ -34,14 +31,8 @@ parabox/
 ├── README.md                   # 面向使用者的说明：玩法、操作、关卡、运行与测试
 ├── AGENTS.md                   # 本文件：项目概述、目录结构、代码约定
 ├── RULE.md                     # 行为准则、修改前确认、交付检查
-├── PACKAGING.md                # 打包与投屏：怎么出 Windows exe、怎么在别的电脑上跑
-├── main.py                     # 入口，启动选关界面（`--selftest` 跑不开窗口的自检）
-├── parabox.spec                # PyInstaller 打包配置（单文件 exe；macOS onedir 出 .app）
-├── build_windows.bat           # Windows 上双击：建环境 → 装依赖 → 测试 → 打包 → 自检
+├── main.py                     # 入口，启动选关界面
 ├── .venv/                      # 项目内虚拟环境（pygame 2.6.1 / Python 3.13.12）
-├── .github/workflows/build.yml # 云端构建 Windows exe（本地是 Mac 时的备份方案）
-├── tools/
-│   └── build_app.py            # 一条命令打包 + 自检产物
 ├── src/
 │   ├── game.py                 # 主循环、状态机（menu / play / win）
 │   ├── world.py                # 世界/关卡数据结构、解析校验、目标点统计
@@ -49,18 +40,14 @@ parabox/
 │   ├── logic.py                # 推箱子、箱子链推动、吸入调度、胜利判定
 │   ├── nested.py               # 嵌套进出、吸入搬运、validate_nesting
 │   ├── render.py               # Pygame 绘制（多层世界 + 箱内缩略图 + HUD）
-│   ├── ui.py                   # 选关界面
-│   ├── paths.py                # 运行位置解析（源码运行 / 打包运行都找得到 levels）
-│   └── selftest.py             # `--selftest`：启动 → 找关卡 → 渲染 → 走一步
+│   └── ui.py                   # 选关界面
 ├── levels/
 │   ├── level_01.json           # 关卡「测试」：外层 7×6 + 内层 5×5，5 步通关
 │   └── level_02.json           # 关卡「吞食01」：外层 7×7 + 内层 5×5，37 步通关（吞食）
 ├── tests/
 │   ├── test_logic.py           # 推箱 / 链推动 / 吸入 / 进出 / 胜利
 │   ├── test_world.py           # 数据结构 / 关卡解析校验 / 目标点统计
-│   ├── test_render.py          # 渲染 / 选关 / 主循环（无 pygame 时自动跳过）
-│   ├── test_paths.py           # 打包 / 源码两种运行位置下的关卡目录解析
-│   └── test_selftest.py        # 打包自检：真关卡通过、空目录必须失败
+│   └── test_render.py          # 渲染 / 选关 / 主循环（无 pygame 时自动跳过）
 ├── assets/                     # logo、favicon、关卡示例图等素材（原 images/ 已并入）
 ├── screenshots/                # 美术对照图 / 流程图 / 演示截图
 │   ├── art_preview.png         # 2×2 美术预览
