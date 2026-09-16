@@ -14,7 +14,8 @@ from src import logic, nested
 from src import world as W
 from src.entity import make_player
 
-LEVEL_01 = Path(__file__).resolve().parent.parent / "levels" / "level_01.json"
+LEVELS_DIR = Path(__file__).resolve().parent.parent / "levels"
+LEVEL_01 = LEVELS_DIR / "level_01.json"
 
 
 def room(door="down", w=5, h=5, boxes=(), walls=()):
@@ -393,6 +394,22 @@ class TestWinAndLevel(unittest.TestCase):
         self.assertFalse(logic.check_win(st))            # 箱子已在 g 上，但玩家没站在 G
         st = logic.move(st, "up")                        # (2,2) → (2,1) = G
         self.assertTrue(logic.check_win(st))
+
+    def test_level_02_solution_wins(self):
+        """吞食01：BFS 最短 21 步；核心手法是从 A 的右边口进、底边口出（把箱子当隧道）。"""
+        state = W.load_level(LEVELS_DIR / "level_02.json")["state"]
+        paths = []
+        for d in ["right", "right", "down", "left", "up", "left", "left", "left", "down",
+                  "left", "down", "down", "down", "right", "up", "up", "up",
+                  "down", "down", "down", "left"]:
+            state = logic.move(state, d)
+            paths.append(list(state["player"]["path"]))
+        self.assertTrue(logic.check_win(state))
+        self.assertEqual(state["moves"], 21)
+        self.assertIn(["A"], paths)                     # 中途确实进过 A 的内部（隧道）
+        self.assertEqual((state["root"]["boxes"]["1"]["x"], state["root"]["boxes"]["1"]["y"]), (3, 1))
+        self.assertEqual((state["root"]["boxes"]["A"]["x"], state["root"]["boxes"]["A"]["y"]), (2, 3))
+        self.assertEqual((state["player"]["x"], state["player"]["y"]), (2, 5))
 
     def test_check_win_false_initially(self):
         self.assertFalse(logic.check_win(W.load_level(LEVEL_01)["state"]))
