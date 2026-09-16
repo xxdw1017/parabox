@@ -47,6 +47,7 @@ parabox/
 │   ├── test_world.py           # 数据结构 / 关卡解析校验 / 目标点统计
 │   └── test_render.py          # 渲染 / 选关 / 主循环（无 pygame 时自动跳过）
 ├── assets/                     # logo、favicon、关卡示例图等素材（原 images/ 已并入）
+├── screenshots/                # 美术对照图 / 演示截图（art_preview.png 为 2×2 美术预览）
 └── .dsh/skills/                # DSH 技能根目录（自动发现，深度 1）
     ├── push-box-logic/
     │   └── SKILL.md            # 推箱子逻辑
