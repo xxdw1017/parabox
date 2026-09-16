@@ -33,6 +33,7 @@ PALETTE = {
     "floor_inner": "#453A0D",  # 内部空间：深黄
     "wall": "#B9C0C7",         # 墙：淡灰
     "player": "#FF8AD0",       # 玩家：洋红（偏亮以保证对比度）
+    "eye": "#14161A",          # 玩家的两只小圆眼：近黑
     "box_open": "#F2C744",     # 含内部空间的方块：黄
     "box_plain": "#6FA8FF",    # 普通方块：蓝
     "goal": "#6CC77A",         # 判定点标记（g 画方框、G 画圆环）
@@ -201,6 +202,13 @@ def draw_world(surface, world: dict, origin, tile: int, player=None,
             pygame.draw.circle(surface, rgb(PALETTE["glow"]), center,
                                radius + max(2, tile // 16), max(2, tile // 12))
         pygame.draw.circle(surface, rgb(PALETTE["player"]), center, radius)
+        if radius >= 6:                                          # 两只黑色小圆眼（太小就不画）
+            eye_radius = max(2, int(radius * 0.22))
+            dx = max(2, int(radius * 0.38))
+            dy = max(2, int(radius * 0.30))
+            for sx in (-1, 1):
+                pygame.draw.circle(surface, rgb(PALETTE["eye"]),
+                                   (center[0] + sx * dx, center[1] - dy), eye_radius)
 
     if active:
         border = pygame.Rect(ox, oy, world["w"] * tile, world["h"] * tile)
