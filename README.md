@@ -9,30 +9,6 @@ Python + Pygame 复刻《Patrick's Parabox》的**单关卡**玩法：推箱子�
 
 ---
 
-## 快速开始
-
-本机系统 Python（miniforge 基础环境）里**没有 pygame**，依赖装在项目内的 `.venv`：
-
-```bash
-cd parabox
-
-# 方式一：激活虚拟环境后用默认命令
-source .venv/bin/activate
-python main.py
-
-# 方式二：直接指定虚拟环境的解释器
-.venv/bin/python main.py
-```
-
-跑测试：
-
-```bash
-.venv/bin/python -m unittest discover tests -v     # 全量 108 个用例
-.venv/bin/python -m unittest tests.test_logic      # 只跑规则逻辑
-```
-
-> 用系统 Python 跑测试时，渲染 / 选关 / 主循环用例会自动跳过（未装 pygame），逻辑用例照常执行。
-
 ## 操作
 
 | 按键 | 作用 |
