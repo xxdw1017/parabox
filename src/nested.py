@@ -8,6 +8,7 @@
 
 约定：
 - 公开函数一律“先复制再改”，不修改传入的 state；
+- 这些函数**不改 moves 计数**：一次玩家操作记一步，统一由 `logic.move()` 里的 `_accepted()` 负责；
 - 操作被拒绝时返回**传入的那个 state**（用 `result is state` 判断是否生效）；
 - 返回栈记录 `(world_ref, box_uid)`：world_ref 是父世界的路径，退出时用 box_uid 现查箱子的位置；
 - 搬运统一走 `_transfer_inplace()`，两条进入路径（吸入 / 推入别人的口）共用同一套落点与 validate_nesting()。
@@ -64,7 +65,7 @@ def _clear_outer_cell_inplace(state: dict, parent: dict, cell, direction: str) -
         return False
     boxes = [parent["boxes"][b["uid"]] for b in chain["boxes"]]
     if chain["sink"] is not None:
-        if not _transfer_inplace(state, parent, chain["sink"], boxes[-1], bump=False):
+        if not _transfer_inplace(state, parent, chain["sink"], boxes[-1]):
             return False
         boxes = boxes[:-1]
     for b in boxes:
@@ -89,7 +90,6 @@ def _enter_inplace(state: dict, box: dict, direction: str) -> bool:
         return False                       # 口被箱子占住且推进去也推不动
     state["return_stack"].append({"path": path, "box_uid": target["uid"]})
     state["player"] = make_player(path + [target["uid"]], cell[0], cell[1])
-    state["moves"] += 1
     return True
 
 
@@ -110,12 +110,10 @@ def _exit_inplace(state: dict) -> bool:
         return False                       # 外面被箱子堵住且推不动
     state["return_stack"].pop()
     state["player"] = make_player(path[:-1], cell[0], cell[1])
-    state["moves"] += 1
     return True
 
 
-def _transfer_inplace(state: dict, world: dict, target_box: dict, box: dict,
-                      bump: bool = True) -> bool:
+def _transfer_inplace(state: dict, world: dict, target_box: dict, box: dict) -> bool:
     """把 box（连同它的 inner_world）搬进 target_box 的内部世界。
 
     落点 = 面朝 box 那条边的口格；口格被占则先把占位箱子朝房间内侧推一格。
@@ -141,8 +139,6 @@ def _transfer_inplace(state: dict, world: dict, target_box: dict, box: dict,
         box["x"], box["y"] = old
         world["boxes"][box["uid"]] = box
         return False
-    if bump:
-        state["moves"] += 1
     return True
 
 
@@ -170,7 +166,6 @@ def _push_out_inplace(state: dict, box: dict) -> bool:
         box["x"], box["y"] = old
         world["boxes"][box["uid"]] = box
         return False
-    state["moves"] += 1
     return True
 
 

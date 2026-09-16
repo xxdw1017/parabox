@@ -72,7 +72,7 @@ def move(state: dict, direction: str) -> dict:
 
     # 1) 站在口格上、朝口的外侧走 = 退出内层
     if exit_side_at(world, (player["x"], player["y"])) == direction:
-        return nested.exit_world(state)
+        return _accepted(state, nested.exit_world(state))
 
     x, y = step((player["x"], player["y"]), direction)
 
@@ -84,7 +84,7 @@ def move(state: dict, direction: str) -> dict:
 
     # 3) 前方没有箱子：走一格
     if not chain["boxes"]:
-        return _walk(state, x, y)
+        return _accepted(state, _walk(state, x, y))
 
     # 4) 内层里，链尾箱子站在口格上并朝口外推 → 推出外层
     end = chain["boxes"][-1]
@@ -92,7 +92,8 @@ def move(state: dict, direction: str) -> dict:
         result = nested.push_out(state, end)
         if result is state:
             return state
-        return _advance(result, direction, [b["uid"] for b in chain["boxes"][:-1]])
+        return _accepted(state, _advance(result, direction,
+                                         [b["uid"] for b in chain["boxes"][:-1]]))
 
     # 5) 推得动：整条链前进一格（链尾可能被推进别人的口）
     if can_advance(world, chain):
@@ -100,31 +101,43 @@ def move(state: dict, direction: str) -> dict:
             result = nested.push_into_inner(state, chain["sink"], chain["boxes"][-1])
             if result is state:
                 return state                                  # 口被占且推不开 → 不动
-            return _advance(result, direction, [b["uid"] for b in chain["boxes"][:-1]])
-        return _advance(state, direction, [b["uid"] for b in chain["boxes"]])
+            return _accepted(state, _advance(result, direction,
+                                             [b["uid"] for b in chain["boxes"][:-1]]))
+        return _accepted(state, _advance(state, direction,
+                                         [b["uid"] for b in chain["boxes"]]))
 
     # 6) 推不动：先吸入，再考虑进入箱子
     first = chain["boxes"][0]
     if can_swallow(world, first, chain, direction):
         result = nested.swallow(state, first, chain["boxes"][1])
         if result is not state:
-            return result
+            return _accepted(state, result)
     if can_enter(state, first, direction):
-        return nested.enter_world(state, first, direction)
+        return _accepted(state, nested.enter_world(state, first, direction))
     return state
 
 
+def _accepted(state: dict, result: dict) -> dict:
+    """一次玩家操作只记一步（无论中间做了搬运、推出还是普通推箱）。
+
+    传入的 result 必须是新状态；被拒绝（result is state）时调用方直接返回 state。
+    """
+    if result is state:
+        return state
+    result["moves"] = state["moves"] + 1
+    return result
+
+
 def _walk(state: dict, x: int, y: int) -> dict:
-    """玩家走到相邻空格。"""
+    """玩家走到相邻空格（不记步数，由 _accepted 统一记）。"""
     new = copy.deepcopy(state)
     player = new["player"]
     new["player"] = make_player(player["path"], x, y)
-    new["moves"] += 1
     return new
 
 
 def _advance(state: dict, direction: str, box_uids) -> dict:
-    """整条链（按 uid）前进一格，玩家同时前进一步。"""
+    """整条链（按 uid）前进一格，玩家同时前进一步（不记步数）。"""
     new = copy.deepcopy(state)
     world = W.active_world(new)
     for uid in box_uids:
@@ -133,5 +146,4 @@ def _advance(state: dict, direction: str, box_uids) -> dict:
     player = new["player"]
     dx, dy = DELTA[direction]
     new["player"] = make_player(player["path"], player["x"] + dx, player["y"] + dy)
-    new["moves"] += 1
     return new
