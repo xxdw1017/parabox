@@ -40,11 +40,16 @@ def empty_world(w=5, h=5):
 @unittest.skipUnless(HAVE_PYGAME, "未安装 pygame")
 class TestPalette(unittest.TestCase):
     def test_contrast_targets(self):
+        """新美术（纯色）的可读性：两种地面都要查。"""
         ratios = render.palette_contrasts()
-        self.assertGreaterEqual(ratios["wall/floor"], 3.0, ratios)
-        for name in ("player/floor", "goal/floor", "box/floor", "door/floor", "text/bg", "muted/bg"):
+        for name in ("wall", "box_open", "box_plain"):
+            for floor in ("floor", "inner"):
+                self.assertGreaterEqual(ratios[f"{name}/{floor}"], 3.0, ratios)
+        for name in ("player", "goal", "glow", "door"):
+            for floor in ("floor", "inner"):
+                self.assertGreaterEqual(ratios[f"{name}/{floor}"], 4.5, ratios)
+        for name in ("text/bg", "muted/bg"):
             self.assertGreaterEqual(ratios[name], 4.5, ratios)
-        self.assertGreaterEqual(ratios["brand/box"], 3.0, ratios)
 
     def test_palette_matches_skill_doc(self):
         """代码里的每个颜色都要在 world-rendering 技能里出现（RULE.md §五）。"""
