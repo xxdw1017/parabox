@@ -28,6 +28,7 @@ Python + Pygame 复刻《Patrick's Parabox》单关卡。
 ## 目录结构
 ```
 parabox/
+├── README.md                   # 面向使用者的说明：玩法、操作、关卡、运行与测试
 ├── AGENTS.md                   # 本文件：项目概述、目录结构、代码约定
 ├── RULE.md                     # 行为准则、修改前确认、交付检查
 ├── main.py                     # 入口，启动选关界面
