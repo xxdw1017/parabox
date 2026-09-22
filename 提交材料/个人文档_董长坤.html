@@ -1,8 +1,7 @@
 <!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><title>递归之箱 · 个人文档 · 董长坤</title><style>
 @page { size: A4; margin: 14mm; }
-* { box-sizing: border-box; }
-body { font-family: "Songti SC","PingFang SC","Microsoft YaHei",serif; font-size: 10.5pt; line-height: 1.55;
-       color: #1a1a1a; margin: 0; }
+body { font-family: "Songti SC","PingFang SC","Microsoft YaHei",serif; font-size: 10.5pt;
+       line-height: 1.55; color: #1a1a1a; margin: 0; }
 h1 { font-size: 17pt; margin: 0 0 2mm; }
 h2 { font-size: 12.5pt; margin: 5mm 0 2mm; padding-bottom: 1mm; border-bottom: 1px solid #999; }
 h3 { font-size: 11.5pt; margin: 3.5mm 0 1.5mm; }
@@ -15,8 +14,8 @@ table { border-collapse: collapse; width: 100%; margin: 0 0 2.5mm; font-size: 9.
 th, td { border: 1px solid #bbb; padding: 1.1mm 1.8mm; text-align: left; vertical-align: top; }
 th { background: #eef0f3; }
 code { font-family: "SF Mono",Menlo,Consolas,monospace; font-size: 9pt; background: #f2f2f4; padding: 0 0.6mm; }
-pre { background: #f6f6f8; border: 1px solid #ddd; border-radius: 2px; padding: 2mm 2.5mm; margin: 0 0 2.5mm;
-      white-space: pre-wrap; page-break-inside: avoid; }
+pre { background: #f6f6f8; border: 1px solid #ddd; border-radius: 2px; padding: 2mm 2.5mm;
+      margin: 0 0 2.5mm; white-space: pre-wrap; page-break-inside: avoid; }
 pre code { background: none; font-size: 8.4pt; line-height: 1.4; }
 figure { margin: 0 0 2.5mm; text-align: center; page-break-inside: avoid; }
 figure img { max-width: 100%; max-height: 78mm; }
@@ -84,35 +83,27 @@ h2, h3 { page-break-after: avoid; }
 <tr><td>选做功能</td><td>✅ 1 / 3：撤销 / 重置已完成（纯函数 + 快照，白送）；通关计时、音效未做</td></tr>
 <tr><td>超出预期</td><td>⭐ 6 项：嵌套不限层数 + 自引用校验、双向穿口与吞食、双条件判定点（箱子 <code>g</code> + 玩家 <code>G</code>）、BFS 解算器、108 个自动化测试、文档一致性校验</td></tr>
 <tr><td>质量</td><td>108 个用例全部通过；逻辑层可在无 pygame 环境下验证（85 通过 / 23 跳过）</td></tr>
-<tr><td>已知限制</td><td>无音效与通关计时；无死局提示（推进死角需按 <code>R</code> 重置）；美术无补间动画</td></tr>
 <tr><td>自评</td><td>机制完整度与工程质量达标，<strong>达到开题承诺并超出</strong>；差异化亮点是&quot;规则先行 + 可验证&quot;的 AI 协作流程</td></tr>
 </table>
 <h2>六、个人工作：关键代码说明（含流程图）</h2>
 <figure><img src="../screenshots/flow_move.png" alt="一次按键的完整判定流程"><figcaption>一次按键的完整判定流程</figcaption></figure>
 <p><strong>① 判定优先级（<code>src/logic.py::move()</code>）</strong>：一次按键按固定顺序判定六条分支——</p>
 <p>出口 → 墙 → 空地 → 整链推动 → 吸入（吞食）→ 进入箱子；全部不满足则状态不变、不记步数、不进撤销栈。</p>
-<p><strong>② 为什么顺序不能换</strong>：站在口格朝外走必须<strong>先于</strong>碰撞判定，否则会被当成撞墙；&quot;整链推不动&quot;必须<strong>先于</strong>&quot;进入箱子&quot;，否则能推动时也会误触发进入。这个顺序在 SKILL.md 里写死，改动前必须先列出受影响的测试用例。</p>
+<p><strong>② 为什么顺序不能换</strong>：站在口格朝外走必须先于碰撞判定，否则会被当成撞墙；&quot;整链推不动&quot;必须先于&quot;进入箱子&quot;。这个顺序在 SKILL.md 里写死，改动前先列出受影响的测试用例。</p>
 <p><strong>③ 关键代码（节选自 <code>logic.py</code> 与 <code>nested.py</code>）</strong></p>
 <pre><code>
-# 计数只在这一处发生：一次按键 = 一步（曾因搬运路径重复计数导致 37 步记成 39 步）
+# 计数只在这一处发生：一次按键 = 一步（曾因搬运路径重复计数，37 步记成 39 步）
 def _accepted(state, new_state):
     new_state[&quot;moves&quot;] = state[&quot;moves&quot;] + 1
     return new_state
-
-# 进入落点 = 对侧那条边的中心口格；返回栈记 (world_ref, box_uid)，退出时现查位置
+# 进入落点 = 对侧边的中心口格（口 = 内层边缘中心格）；返回栈记 (world_ref, box_uid)，退出时现查位置
 def enter_world(state, box, direction):
-    inner = box[&quot;inner_world&quot;]
-    side = opposite(direction)                       # 从下方进入 → 落在内层底边的口
-    cell = side_center(inner, side)
-    state[&quot;player&quot;] = {&quot;path&quot;: state[&quot;player&quot;][&quot;path&quot;] + [box[&quot;uid&quot;]], &quot;x&quot;: cell[0], &quot;y&quot;: cell[1]}
+    cell = side_center(box[&quot;inner_world&quot;], opposite(direction))
+    state[&quot;player&quot;][&quot;path&quot;] += [box[&quot;uid&quot;]]
+    state[&quot;player&quot;][&quot;x&quot;], state[&quot;player&quot;][&quot;y&quot;] = cell
     state[&quot;return_stack&quot;].append((state[&quot;player&quot;][&quot;path&quot;][:-1], box[&quot;uid&quot;]))
-
-# 口由内层地图自己决定：内层宽高为奇数，四条边的中心格不是墙就有口
-def has_door(world, side):
-    x, y = side_center(world, side)
-    return not is_wall(world, x, y)
 </code></pre>
-<p><strong>④ 口模型与双向穿口</strong>：内层宽高必须是奇数，四条边的中心格即口位；边缘环上除中心格外必须都是墙，解析期即报错。箱子与玩家共用同一个口与同一个落点——外层推箱时箱链末端的箱子会被推进别人的口（吞食），内层推箱时再推一步就把它推回外层。</p>
+<p><strong>④ 口模型与双向穿口</strong>：内层宽高必须是奇数，四条边的中心格即口位，边缘环上除中心格外必须都是墙（解析期报错）。箱子与玩家共用同一个口与落点：推箱时链尾的箱子会被推进别人的口（吞食），在内层再推一步就把它推回外层。</p>
 <div class="pagebreak"></div>
 <h2>七、效果和结论</h2>
 <p><strong>效果</strong></p>
@@ -120,6 +111,7 @@ def has_door(world, side):
 <li><strong>功能</strong>：2 个关卡可完整通关（最短解 5 步 / 37 步），选关、撤销、重置均可用。</li>
 <li><strong>质量</strong>：108 个用例全绿（规则 41 / 数据 44 / 渲染 23）；用<strong>没装 pygame</strong> 的解释器执行时 85 个规则与数据用例照常通过、23 个渲染用例自动跳过——分层不只是文档里的约定，而是可复现的事实。</li>
 <li><strong>可解性</strong>：自研 BFS 解算器搜索 15,191 个状态、调用规则 57,651 次，求出「吞食01」37 步最短解；两关最短解都固化成回归测试，关卡被改坏会立刻报红。</li>
+<li><strong>已知限制</strong>：无音效与通关计时；无死局提示（推进死角需按 <code>R</code> 重置）；美术无补间动画。</li>
 </ul>
 <p><strong>结论</strong>：核心机制（嵌套进出、吞食、双向穿口、跨层冻结、双条件判定）全部按 SKILL 规格实现并通过测试；剩余差距集中在表现层（音效、计时、动画、死局提示），属于开题时就划为&quot;选做&quot;的范围。后续方向：解算器工具化、动画补间、更多关卡。</p>
 <h2>八、AI 编程感受（含流程图）</h2>
