@@ -28,7 +28,6 @@ Python + Pygame 复刻《Patrick's Parabox》单关卡。
 ## 目录结构
 ```
 parabox/
-├── README.md                   # 面向使用者的说明：玩法、操作、关卡、运行与测试
 ├── AGENTS.md                   # 本文件：项目概述、目录结构、代码约定
 ├── RULE.md                     # 行为准则、修改前确认、交付检查
 ├── main.py                     # 入口，启动选关界面
@@ -42,25 +41,13 @@ parabox/
 │   ├── render.py               # Pygame 绘制（多层世界 + 箱内缩略图 + HUD）
 │   └── ui.py                   # 选关界面
 ├── levels/
-│   ├── level_01.json           # 关卡「测试」：外层 7×6 + 内层 5×5，5 步通关
-│   └── level_02.json           # 关卡「吞食01」：外层 7×7 + 内层 5×5，37 步通关（吞食）
+│   └── level_01.json           # 关卡数据（地图 + 嵌套结构）
 ├── tests/
 │   ├── test_logic.py           # 推箱 / 链推动 / 吸入 / 进出 / 胜利
 │   ├── test_world.py           # 数据结构 / 关卡解析校验 / 目标点统计
 │   └── test_render.py          # 渲染 / 选关 / 主循环（无 pygame 时自动跳过）
 ├── assets/                     # logo、favicon、关卡示例图等素材（原 images/ 已并入）
-├── screenshots/                # 美术对照图 / 流程图 / 运行画面
-│   ├── art_preview.png         # 2×2 美术预览
-│   ├── framework.png           # 三层架构与数据流图（个人文档用）
-│   ├── flow_move.png           # 一次按键的完整判定流程图
-│   ├── flow_ai.png             # AI 协作流程（规则 → 实现 → 测试 → 验收闭环）
-│   └── 运行画面_选关.png / 运行画面_吞食01内层.png / 运行画面_通关.png  # 1280×720 真实渲染输出
-├── 提交材料/                   # 课程作业交付物（个人文档、提交步骤、历史版本导出）
-│   ├── 个人文档_董长坤.md/.html # A4 打印版：共同工作 + 个人工作（关键代码 / 效果 / AI 感受）
-│   ├── 系统描述_298字.txt       # 提交栏用（≤300 字）
-│   ├── 提交帖模板.md / 提交步骤.md / 压缩包清单.md / 演示视频脚本.md
-│   ├── 运行说明.txt             # 给老师/同学：Windows 双击 exe、macOS 跑源码
-│   └── 历史版本/                # 规则与测试逐版导出（9 个文件共 31 版）+ 版本演化总览
+├── screenshots/                # 美术对照图 / 演示截图（art_preview.png 为 2×2 美术预览）
 └── .dsh/skills/                # DSH 技能根目录（自动发现，深度 1）
     ├── push-box-logic/
     │   └── SKILL.md            # 推箱子逻辑
